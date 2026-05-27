@@ -542,9 +542,11 @@ input[type="datetime-local"].input:focus {
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 100;
+  padding-top: 5vh;
+  overflow-y: auto;
 }
 
 .modal {
@@ -554,6 +556,8 @@ input[type="datetime-local"].input:focus {
   padding: 1.5rem;
   width: 680px;
   max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal h3 { color: #fff; margin-bottom: 1rem; }
