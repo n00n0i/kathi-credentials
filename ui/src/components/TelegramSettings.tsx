@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const TelegramSettings: React.FC = () => {
   const [botToken, setBotToken] = useState('');
@@ -8,14 +8,39 @@ const TelegramSettings: React.FC = () => {
   const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Load saved config on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/telegram', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('session_token')}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setChatId(data.chat_id || '');
+          setIsEnabled(data.is_enabled ?? true);
+          // bot_token is masked as *** — only set if user hasn't typed a new one
+          if (data.bot_token === '***') {
+            setBotToken('***'); // tell UX it's pre-filled but not changeable
+          }
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
     try {
+      const payload: Record<string, unknown> = {
+        bot_token: botToken && botToken !== '***' ? botToken : '',
+        chat_id: chatId,
+        is_enabled: isEnabled,
+      };
       const res = await fetch('/api/settings/telegram', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('session_token')}` },
-        body: JSON.stringify({ bot_token: botToken, chat_id: chatId, is_enabled: isEnabled }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setMessage({ type: 'success', text: '✅ Telegram settings saved!' });
@@ -98,7 +123,7 @@ const TelegramSettings: React.FC = () => {
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? '💾 Saving...' : '💾 Save Settings'}
         </button>
-        <button className="btn btn-secondary" onClick={handleTest} disabled={testing || !botToken || !chatId}>
+        <button className="btn btn-secondary" onClick={handleTest} disabled={testing || !chatId}>
           {testing ? '📤 Sending...' : '📤 Send Test Message'}
         </button>
       </div>

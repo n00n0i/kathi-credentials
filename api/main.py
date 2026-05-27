@@ -687,7 +687,7 @@ def get_telegram(agent: dict = Depends(get_current_agent)):
     cfg = db.get_telegram_config()
     if cfg:
         return {
-            "bot_token": cfg.get("bot_token", ""),
+            "bot_token": "***",  # never expose encrypted raw token to UI
             "chat_id": cfg.get("chat_id", ""),
             "is_enabled": cfg.get("is_enabled", True),
         }
