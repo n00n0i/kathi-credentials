@@ -707,8 +707,9 @@ def save_telegram(data: TelegramConfig, agent: dict = Depends(get_current_agent)
 @app.post("/settings/telegram/test", response_model=TelegramTestResponse)
 def test_telegram(agent: dict = Depends(get_current_agent)):
     require_permission(agent, "agent:write")
-    settings = get_settings()
-    if not settings.telegram_bot_token or not settings.telegram_chat_id:
+    db = get_neo4j()
+    cfg = db.get_telegram_config()
+    if not cfg or not cfg.get("bot_token") or not cfg.get("chat_id"):
         return TelegramTestResponse(success=False, error="Telegram not configured")
 
     text = (

@@ -4,7 +4,8 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from api.config import get_settings
+from api.neo4j_client import get_neo4j
+from api.encryption import decrypt_value
 
 logger = logging.getLogger(__name__)
 
@@ -13,13 +14,18 @@ TELEGRAM_API = "https://api.telegram.org"
 
 async def send_message(text: str) -> tuple[bool, Optional[int], Optional[str]]:
     """Send a Telegram message. Returns (success, message_id, error)."""
-    settings = get_settings()
-    if not settings.telegram_bot_token or not settings.telegram_chat_id:
+    db = get_neo4j()
+    cfg = db.get_telegram_config()
+    if not cfg or not cfg.get("bot_token") or not cfg.get("chat_id"):
         return False, None, "Telegram not configured (missing bot_token or chat_id)"
 
-    url = f"{TELEGRAM_API}/bot{settings.telegram_bot_token}/sendMessage"
+    from api.encryption import decrypt_value
+    bot_token = decrypt_value(cfg["bot_token"])
+    chat_id = cfg["chat_id"]
+
+    url = f"{TELEGRAM_API}/bot{bot_token}/sendMessage"
     payload = {
-        "chat_id": settings.telegram_chat_id,
+        "chat_id": chat_id,
         "text": text,
         "parse_mode": "HTML",
     }
