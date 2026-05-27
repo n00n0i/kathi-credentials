@@ -7,10 +7,11 @@ import AuditLogSettings from './components/AuditLogSettings';
 import SystemHealth from './components/SystemHealth';
 import CredentialsList from './components/CredentialsList';
 import HostsList from './components/HostsList';
+import UserManagement from './components/UserManagement';
 import './styles/settings.css';
 import './styles/credentials.css';
 
-type TabId = 'telegram' | 'encryption' | 'admin' | 'credentials' | 'hosts' | 'agents' | 'audit' | 'system';
+type TabId = 'telegram' | 'encryption' | 'admin' | 'credentials' | 'hosts' | 'agents' | 'audit' | 'system' | 'users';
 
 interface Tab {
   id: TabId;
@@ -28,6 +29,7 @@ const TABS: Tab[] = [
   { id: 'agents', label: 'Agents', icon: '🤖', description: 'Manage agent tokens & permissions' },
   { id: 'audit', label: 'Audit Log', icon: '📋', description: 'Credential access history' },
   { id: 'system', label: 'System', icon: '⚙️', description: 'Health check & service status' },
+  { id: 'users', label: 'Users', icon: '👥', description: 'Manage users via Keycloak' },
 ];
 
 const SettingsPage: React.FC = () => {
@@ -52,6 +54,8 @@ const SettingsPage: React.FC = () => {
         return <AuditLogSettings />;
       case 'system':
         return <SystemHealth />;
+      case 'users':
+        return <UserManagement />;
       default:
         return null;
     }

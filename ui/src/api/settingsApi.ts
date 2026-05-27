@@ -105,6 +105,17 @@ export const api = {
 
   // System
   getHealth: () => api.request<HealthStatus>('/health'),
+
+  // Users
+  listUsers: () => api.request<{ users: User[] }>('/users'),
+  getUser: (userId: string) => api.request<User>(`/users/${userId}`),
+  createUser: (data: UserCreate) => api.request<User>('/users', { method: 'POST', body: data as unknown as Record<string, unknown> }),
+  updateUser: (userId: string, data: Partial<Omit<UserCreate, 'password'>> & { enabled?: boolean }) =>
+    api.request<User>(`/users/${userId}`, { method: 'PUT', body: data }),
+  resetUserPassword: (userId: string, newPassword: string) =>
+    api.request<{ success: boolean }>(`/users/${userId}/reset-password`, { method: 'POST', body: { new_password: newPassword } }),
+  deleteUser: (userId: string) =>
+    api.request<{ success: boolean }>(`/users/${userId}`, { method: 'DELETE' }),
 };
 
 export interface Host {
@@ -163,4 +174,23 @@ export interface HealthStatus {
   total_credentials: number;
   total_hosts: number;
   total_agents: number;
+}
+
+// Users
+export interface User {
+  user_id: string;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface UserCreate {
+  username: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
 }
