@@ -132,26 +132,59 @@ const AgentsSettings: React.FC = () => {
 
 const copySetupSnippet = async () => {
     if (!createdAgent) return;
-    const snippet = `KATHI_API_URL=${agentApiUrl}
+    const snippet = `# ═══════════════════════════════════════════
+# KathiCredentials Agent Setup Instructions
+# ═══════════════════════════════════════════
+
+WHAT IS THIS:
+  KathiCredentials is your credential & host management system.
+  Store, retrieve, and manage secrets (SSH keys, API tokens, passwords)
+  for the systems you operate.
+
+AUTHENTICATION:
+  1. Set the environment variables below in your .env
+  2. All API calls must include: Authorization: Bearer <KATHI_AGENT_TOKEN>
+  3. Your agent_id must match KATHI_AGENT_ID
+
+YOUR PERMISSIONS:
+  ${createdAgent.permissions.join(', ') || 'credential:read'}
+
+AVAILABLE ENDPOINTS:
+  GET    /credentials          — list your credentials
+  POST   /credentials          — create a credential
+  GET    /credentials/{id}     — get a single credential
+  PUT    /credentials/{id}     — update a credential
+  DELETE /credentials/{id}     — delete a credential
+  GET    /hosts                — list hosts
+  POST   /hosts                — create a host
+  GET    /hosts/{id}           — get a host
+  PUT    /hosts/{id}           — update a host
+  DELETE /hosts/{id}           — delete a host
+
+SECURITY:
+  - All secret_values are encrypted at rest (Fernet)
+  - You can only access credentials matching your agent_id
+
+CREDENTIAL TYPES:
+  API_KEY | SSH_KEY | PASSWORD | CERTIFICATE | TOKEN | OTHER
+
+# ═══════════════════════════════════════════
+# .env — paste these lines
+# ═══════════════════════════════════════════
+
+KATHI_API_URL=${agentApiUrl}
 KATHI_AGENT_TOKEN=${createdAgent.token}
 KATHI_AGENT_ID=${createdAgent.agent_id}
 KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`;
-    // Try Clipboard API first, fall back to textarea select
-    try {
-      await navigator.clipboard.writeText(snippet);
-      setMessage({ type: 'success', text: '✅ Setup snippet copied!' });
-    } catch {
-      // Fallback: create temp textarea and use execCommand
-      const ta = document.createElement('textarea');
-      ta.value = snippet;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); setMessage({ type: 'success', text: '✅ Setup snippet copied!' }); }
-      catch { setMessage({ type: 'error', text: '❌ Copy failed — select text manually' }); }
-      document.body.removeChild(ta);
-    }
+    const ta = document.createElement('textarea');
+    ta.value = snippet;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); setMessage({ type: 'success', text: '✅ Setup instructions + .env copied!' }); }
+    catch { setMessage({ type: 'error', text: '❌ Copy failed — select text manually' }); }
+    document.body.removeChild(ta);
   };
 
   return (
