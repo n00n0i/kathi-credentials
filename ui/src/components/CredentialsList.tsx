@@ -30,7 +30,7 @@ export default function CredentialsList({ initialToken }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Create form
-  const [form, setForm] = useState({ host_id: '', type: 'ssh_key', key_ref: '', value: '', owner: '', environment: '' });
+  const [form, setForm] = useState({ host_id: '', type: 'ssh_key', name: '', key_ref: '', value: '', owner: '', environment: '' });
   // Edit form
   const [editForm, setEditForm] = useState({ name: '', value: '' });
 
@@ -58,7 +58,7 @@ export default function CredentialsList({ initialToken }: Props) {
       await api.createCredential(form);
       setMsg({ type: 'success', text: 'Credential created ✓' });
       setShowCreate(false);
-      setForm({ host_id: '', type: 'ssh_key', key_ref: '', value: '', owner: '', environment: '' });
+      setForm({ host_id: '', type: 'ssh_key', name: '', key_ref: '', value: '', owner: '', environment: '' });
       load();
     } catch (e: any) {
       setMsg({ type: 'error', text: e.message });
@@ -423,8 +423,13 @@ export default function CredentialsList({ initialToken }: Props) {
                 </div>
               </div>
               <div className="form-group">
-                <label>Name / key_ref</label>
-                <input className="input" placeholder="e.g. prod-ssh-key or aws-api-key" value={form.key_ref}
+                <label>Name</label>
+                <input className="input" placeholder="e.g. Production SSH Key" value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>key_ref <span style={{ color: '#555', fontSize: '0.8rem' }}>(internal identifier)</span></label>
+                <input className="input" placeholder="e.g. prod-ssh-key" value={form.key_ref}
                   onChange={e => setForm({ ...form, key_ref: e.target.value })} required />
               </div>
               <div className="form-group">

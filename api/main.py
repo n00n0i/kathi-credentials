@@ -516,8 +516,12 @@ def list_credentials(host_id: Optional[str] = Query(None), agent: dict = Depends
         "credentials": [
             CredentialListItem(
                 credential_id=c["credential_id"],
+                name=c.get("name") or "",
                 type=c["type"],
                 key_ref=c["key_ref"],
+                host_id=c.get("host_id") or "",
+                hostname=c.get("hostname") or "",
+                environment=c.get("environment") or "",
                 owner=c.get("owner", ""),
                 created_at=str(c["created_at"]) if c.get("created_at") else "",
             )
@@ -589,7 +593,8 @@ def create_credential(data: CredentialCreate, agent: dict = Depends(get_current_
     encrypted = encrypt_value(data.value)
     db = get_neo4j()
     uid = agent.get("user_id")
-    cred = db.create_credential(data.host_id, data.type, data.key_ref, encrypted, data.owner, user_id=uid)
+    cred = db.create_credential(data.host_id, data.type, data.key_ref, encrypted, data.owner,
+                                user_id=uid, name=data.name, environment=data.environment)
     db.create_audit_log("create", agent["agent_id"], "credential", cred["credential_id"], True)
     return cred
 

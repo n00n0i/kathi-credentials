@@ -83,7 +83,7 @@ export const api = {
     return api.request<{ credentials: Credential[] }>(`/api/credentials${qs}`);
   },
   getCredential: (id: string) => api.request<{ credential: CredentialDetail }>(`/api/credentials/${id}`),
-  createCredential: (data: { host_id: string; type: string; key_ref: string; value: string; owner?: string }) =>
+  createCredential: (data: { host_id: string; type: string; name?: string; key_ref: string; value: string; owner?: string; environment?: string }) =>
     api.request<{ credential_id: string }>('/api/credentials', { method: 'POST', body: data }),
   updateCredential: (id: string, data: { name?: string; value?: string }) =>
     api.request<{ success: boolean }>(`/api/credentials/${id}`, { method: 'PUT', body: data }),
@@ -133,9 +133,11 @@ export interface Credential {
   credential_id: string;
   name: string;
   type: string;
+  key_ref: string;
   hostname: string;
   host_id: string;
   environment: string;
+  owner?: string;
   created_at: string;
   updated_at: string;
 }

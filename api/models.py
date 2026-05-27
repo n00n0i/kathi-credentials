@@ -100,14 +100,20 @@ class CredentialCreate(BaseModel):
     host_id: str
     type: str = Field(description="api_key | password | token | ssh_key")
     key_ref: str
+    name: str = ""
     value: str
     owner: str = ""
+    environment: str = ""
 
 
 class CredentialListItem(BaseModel):
     credential_id: str
+    name: str
     type: str
     key_ref: str
+    host_id: str
+    hostname: str
+    environment: str
     owner: str
     created_at: str
 
