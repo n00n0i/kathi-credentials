@@ -132,7 +132,7 @@ const AgentsSettings: React.FC = () => {
 
 const copySetupSnippet = async () => {
     if (!createdAgent) return;
-    const snippet = `KATHI_API_URL=${agentApiUrl}
+const snippet = `KATHI_API_URL=${agentApiUrl}
 KATHI_AGENT_TOKEN=${createdAgent.token}
 KATHI_AGENT_ID=${createdAgent.agent_id}
 KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`;
@@ -335,7 +335,7 @@ CREDENTIAL TYPES:
   OTHER       — any other secret`}</pre>
             </div>
 
-            <div style={{ background: '#0f1117', border: '1px solid #2a2a3a', borderRadius: '8px', padding: '1rem', marginTop: '1rem' }}>
+<div style={{ background: '#0f1117', border: '1px solid #2a2a3a', borderRadius: '8px', padding: '1rem', marginTop: '1rem' }}>
               <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: '0.5rem', fontFamily: 'monospace' }}># .env — paste these lines</div>
               <pre style={{ margin: 0, fontSize: '0.78rem', color: '#86efac', fontFamily: 'monospace', lineHeight: '1.8', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{`KATHI_API_URL=${agentApiUrl}
 KATHI_AGENT_TOKEN=${createdAgent.token}
