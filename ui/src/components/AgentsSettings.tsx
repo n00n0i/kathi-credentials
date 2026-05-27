@@ -132,7 +132,7 @@ const AgentsSettings: React.FC = () => {
 
   const copySetupSnippet = () => {
     if (!createdAgent) return;
-    const snippet = `KATHI_API_URL=${agentApiUrl}
+const snippet = `KATHI_API_URL=${agentApiUrl}
 KATHI_AGENT_TOKEN=${createdAgent.token}
 KATHI_AGENT_ID=${createdAgent.agent_id}
 KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`;
@@ -274,6 +274,61 @@ KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`;
                 />
                 <button className="btn-icon" onClick={() => navigator.clipboard.writeText(createdAgent.token)} title="Copy">📋</button>
               </div>
+            </div>
+
+            {/* Agent Setup Instructions — explain to the agent what KathiCredentials is */}
+            <div style={{ background: '#13152a', border: '1px solid #2a2a4a', borderRadius: '8px', padding: '0.85rem 1rem', marginTop: '0.75rem' }}>
+              <div style={{ fontSize: '0.7rem', color: '#86efac', marginBottom: '0.4rem', fontFamily: 'monospace', fontWeight: 600 }}>
+                🤖 AGENT SETUP INSTRUCTIONS
+              </div>
+              <pre style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>{`WHAT IS THIS:
+  KathiCredentials is your credential & host management system.
+  Store, retrieve, and manage secrets (SSH keys, API tokens, passwords)
+  for the systems you operate.
+
+AUTHENTICATION:
+  1. Set KATHI_API_URL, KATHI_AGENT_TOKEN, KATHI_AGENT_ID in your .env
+  2. All API calls must include: Authorization: Bearer <KATHI_AGENT_TOKEN>
+  3. Your agent_id must match KATHI_AGENT_ID
+
+YOUR PERMISSIONS:
+  ${createdAgent.permissions.join(', ') || 'credential:read'}
+
+AVAILABLE TOOLS (HTTP REST):
+  GET    /credentials          — list your credentials
+  POST   /credentials           — create a credential
+  GET    /credentials/{id}      — get a single credential
+  PUT    /credentials/{id}      — update a credential
+  DELETE /credentials/{id}      — delete a credential
+  GET    /hosts                 — list hosts
+  POST   /hosts                 — create a host
+  GET    /hosts/{id}            — get a host
+  PUT    /hosts/{id}            — update a host
+  DELETE /hosts/{id}            — delete a host
+  GET    /mcp/setup             — self-onboarding (GET ?agent_token=<token>)
+
+EXAMPLE — store a credential:
+  POST /credentials
+  Body: {"name": "github-token", "type": "API_KEY",
+         "secret_value": "ghp_xxxx", "tags": ["github", "prod"]}
+
+EXAMPLE — retrieve a credential:
+  GET /credentials
+  → returns all credentials you own (filtered by your agent_id)
+
+SECURITY:
+  - All secret_values are encrypted at rest (Fernet)
+  - You can only access credentials matching your agent_id
+  - Credential type determines how the secret is used
+  - Tags are for searching/filtering (not access control)
+
+CREDENTIAL TYPES:
+  API_KEY     — generic API key (GitHub, Stripe, etc.)
+  SSH_KEY     — SSH private key
+  PASSWORD    — username + password pair
+  CERTIFICATE — TLS/SSL certificate
+  TOKEN       — OAuth / bearer token
+  OTHER       — any other secret`}</pre>
             </div>
 
             <div style={{ background: '#0f1117', border: '1px solid #2a2a3a', borderRadius: '8px', padding: '1rem', marginTop: '1rem' }}>
