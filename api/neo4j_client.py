@@ -323,26 +323,37 @@ class Neo4jClient:
 
     # ── Credential ──────────────────────────────────────────────────────────
 
-    def create_credential(self, host_id: str, cred_type: str, key_ref: str,
+    def create_credential(self, host_id: Optional[str], cred_type: str, key_ref: str,
                           encrypted_value: str, owner: str, user_id: str,
                           name: str = "", username: str = "", environment: str = "") -> dict:
         credential_id = f"cred_{uuid.uuid4().hex[:12]}"
         created_at = datetime.utcnow().isoformat()
         with self.driver.session() as session:
-            session.run("""
-                MATCH (h:Host {host_id: $host_id, user_id: $user_id})
-                CREATE (c:Credential {credential_id: $credential_id, type: $cred_type,
-                  key_ref: $key_ref, name: $name, username: $username, encrypted_value: $encrypted_value,
-                  owner: $owner, environment: $environment,
-                  user_id: $user_id, created_at: datetime(), updated_at: datetime()})
-                CREATE (h)-[:OWNS]->(c)
-                """, host_id=host_id, credential_id=credential_id,
-                cred_type=cred_type, key_ref=key_ref, name=name, username=username,
-                encrypted_value=encrypted_value, owner=owner,
-                environment=environment, user_id=user_id)
+            if host_id:
+                session.run("""
+                    MATCH (h:Host {host_id: $host_id, user_id: $user_id})
+                    CREATE (c:Credential {credential_id: $credential_id, type: $cred_type,
+                      key_ref: $key_ref, name: $name, username: $username, encrypted_value: $encrypted_value,
+                      owner: $owner, environment: $environment,
+                      user_id: $user_id, created_at: datetime(), updated_at: datetime()})
+                    CREATE (h)-[:OWNS]->(c)
+                    """, host_id=host_id, credential_id=credential_id,
+                    cred_type=cred_type, key_ref=key_ref, name=name, username=username,
+                    encrypted_value=encrypted_value, owner=owner,
+                    environment=environment, user_id=user_id)
+            else:
+                session.run("""
+                    CREATE (c:Credential {credential_id: $credential_id, type: $cred_type,
+                      key_ref: $key_ref, name: $name, username: $username, encrypted_value: $encrypted_value,
+                      owner: $owner, environment: $environment,
+                      user_id: $user_id, created_at: datetime(), updated_at: datetime()})
+                    """, credential_id=credential_id,
+                    cred_type=cred_type, key_ref=key_ref, name=name, username=username,
+                    encrypted_value=encrypted_value, owner=owner,
+                    environment=environment, user_id=user_id)
         return {
             "credential_id": credential_id,
-            "host_id": host_id,
+            "host_id": host_id or "",
             "name": name,
             "type": cred_type,
             "key_ref": key_ref,

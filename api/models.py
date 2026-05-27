@@ -97,7 +97,7 @@ class HostResponse(BaseModel):
 # ── Credential ────────────────────────────────────────────────────────────────
 
 class CredentialCreate(BaseModel):
-    host_id: str
+    host_id: Optional[str] = None
     type: str = Field(description="api_key | password | token | ssh_key")
     key_ref: str
     name: str = ""
