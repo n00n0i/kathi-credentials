@@ -9,16 +9,20 @@ Standalone credential & host management MCP for AI agents. Agents authenticate v
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
-│  AI Agent   │────▶│ KathiCredentials │────▶│  Neo4j      │
-│  (MCP call) │     │  MCP Server      │     │  (bolt:7688)│
+│  AI Agent   │────▶│ KathiCredentials  │────▶│  Neo4j      │
+│  (REST/MCP) │     │  FastAPI :8124    │     │  bolt:7688  │
 └─────────────┘     └──────────────────┘     └─────────────┘
                             │
                             ▼
                     ┌───────────────┐     ┌─────────────┐
-                    │ Telegram Bot  │────▶│ Admin (ด๋อย)│
-                    │ (notification)│     │  DM         │
+                    │ Keycloak      │     │ Telegram    │
+                    │ :8080         │────▶│ Bot → Admin │
+                    │ (auth+users)  │     │ DM          │
                     └───────────────┘     └─────────────┘
 ```
+
+**Auth flow:** Keycloak OIDC → access_token (JWT) → Bearer header on all API calls
+**Data isolation:** `user_id` field on all Neo4j nodes (Keycloak UUID per user)
 
 ---
 
@@ -28,85 +32,69 @@ Standalone credential & host management MCP for AI agents. Agents authenticate v
 
 | Node | Properties |
 |------|------------|
-| `Agent` | `agent_id`, `name`, `permissions: List[str]`, `created_at`, `is_active` |
-| `Host` | `host_id`, `hostname`, `ip`, `role`, `owner`, `tags: List[str]`, `environment`, `created_at` |
-| `Credential` | `credential_id`, `type` (api_key\|password\|token\|ssh_key), `key_ref`, `encrypted_value`, `owner`, `created_at`, `updated_at` |
-| `Token` | `token_id`, `value`, `agent_id`, `permissions: List[str]`, `expires_at`, `is_active`, `created_at` |
-| `AuditLog` | `log_id`, `action`, `agent_id`, `resource_type`, `resource_id`, `timestamp`, `success` |
-| `TelegramConfig` | `config_id`, `bot_token`, `chat_id`, `is_enabled` |
-| `Config` | `key`, `value` (admin_token, encryption_key_created_at) |
-| `Session` | `session_token`, `admin_token_hash`, `expires_at`, `is_active`, `created_at` |
+| `Host` | `host_id`, `name`, `ip_address`, `port`, `ssh_user`, `ssh_note`, `environment`, `tags: List[str]`, `user_id`, `created_at`, `updated_at` |
+| `Credential` | `credential_id`, `name`, `type` (ssh_key/password/api_key/token/certificate/other), `credential_data` (encrypted JSON), `host_id`, `user_id`, `created_at`, `updated_at` |
+| `AuditLog` | `log_id`, `action`, `user_id`, `resource_type`, `resource_id`, `details`, `timestamp` |
+| `Session` | `session_token`, `user_id`, `expires_at`, `is_active`, `created_at` |
 
 ### Relationships
 
 ```
-(Agent) ─[HAS_TOKEN]──▶ (Token)
-(Agent) ─[HAS_ACCESS]──▶ (Host)
-(Host) ─[OWNS]────────▶ (Credential)
-(AuditLog) ─[BY]──────▶ (Agent)
-(AuditLog) ─[ON]──────▶ (Credential|Host)
+(User) ─[OWNS]──▶ (Host)
+(User) ─[OWNS]──▶ (Credential)
+(User) ─[HAS]────▶ (Session)
+(AuditLog) ─[BY]─▶ (User)
+(AuditLog) ─[ON]─▶ (Credential|Host)
+(Host) ─[HAS]────▶ (Credential)
 ```
+
+> Note: In this implementation, ownership is via `user_id` field (not Cypher relationships) for simpler queries and per-user isolation.
 
 ---
 
 ## API Endpoints (FastAPI)
 
+All endpoints require `Authorization: Bearer <access_token>` header (Keycloak JWT).
+
 ### Auth
-- `POST /auth` — Authenticate with token → { valid, agent_id, name, permissions, expires_at }
-- `POST /auth/login` — Login with admin token → { session_token, expires_at, name, permissions }
-- `GET /auth/session` — Validate current session → { session_token, expires_at, name, permissions }
-- `POST /auth/logout` — Logout (deactivate session) → { ok }
+- `POST /users/login` — Login with Keycloak username/password → `{access_token, token_type, expires_in}`
+- `GET /users/me` — Get current user info
+- `GET /auth/session` — Validate current session
 
 ### Session Architecture (Browser UI)
-Admin tokens are stored **only in Neo4j** — never in browser localStorage. Browser sessions use short-lived `ses_xxx` tokens:
-
-1. Docker container starts → auto-generates `sk-xxx` admin token → prints to container logs
-2. User copies token from logs → pastes in UI login screen
-3. Server validates admin token → creates `ses_xxx` session (7-day expiry)
-4. `ses_xxx` stored in localStorage → used for all subsequent API calls
-5. Switching browsers → login again with same admin token from logs
-
-```
-Token priority in validate_token():
-1. ses_xxx (session token)     → Neo4j Session node, expires in 7 days
-2. sk-xxx (stored admin token) → Neo4j Config node, no expiry
-3. sk-xxx (env admin token)    → ADMIN_TOKEN env var, no expiry (migration fallback)
-4. JWT token                   → Created for agent tokens
-5. kc_xxx (agent token)       → Neo4j Token node
-```
+Browser sessions use Keycloak access_token stored in `localStorage` as `session_session_token`. No separate session tokens — the Keycloak JWT itself is used for all authenticated requests.
 
 ### Hosts
-- `GET /hosts` — List hosts (filter by tags, role)
-- `GET /hosts/search?q=` — Search hosts
+- `GET /hosts` — List user's hosts (filtered by `user_id` from JWT)
 - `GET /hosts/{host_id}` — Get host detail
-- `POST /hosts` — Create host (admin only)
-- `PUT /hosts/{host_id}` — Update host (admin only)
-- `DELETE /hosts/{host_id}` — Delete host (admin only)
+- `GET /hosts/search?q=` — Search hosts by name/IP
+- `POST /hosts` — Create host
+- `PUT /hosts/{host_id}` — Update host
+- `DELETE /hosts/{host_id}` — Delete host
 
 ### Credentials
 - `GET /credentials?host_id=` — List credentials for host (NO values)
-- `GET /credentials/{credential_id}` — Get credential (WITH value) → 🔔 Telegram
-- `POST /credentials` — Create credential (admin only)
-- `PUT /credentials/{credential_id}` — Update credential (admin only)
-- `DELETE /credentials/{credential_id}` — Delete credential (admin only)
+- `GET /credentials/{credential_id}` — Get credential WITH decrypted value → 🔔 Telegram notify
+- `POST /credentials` — Create credential
+- `PUT /credentials/{credential_id}` — Update credential
+- `DELETE /credentials/{credential_id}` — Delete credential
 
-### Agents
-- `GET /agents` — List agents
-- `POST /agents` — Create agent + token
-- `DELETE /agents/{agent_id}` — Revoke agent + tokens
+### Users (Admin only via Keycloak Admin API)
+- `GET /users` — List all users
+- `POST /users` — Create user
+- `DELETE /users/{user_id}` — Delete user
+- `POST /users/{user_id}/reset-password` — Reset user password
 
-### Audit
-- `GET /audit` — Get audit log (filter by agent_id, credential_id, from, to)
-
-### Settings (Telegram, Encryption)
-- `GET /settings/telegram` — Get Telegram config
+### Settings (Admin only)
+- `GET /settings` — Get all settings (telegram, encryption, admin_token)
 - `PUT /settings/telegram` — Update Telegram config
 - `POST /settings/telegram/test` — Send test message
-- `GET /settings/encryption/key` — Show key metadata (no value)
-- `POST /settings/encryption/rotate` — Rotate encryption key
+- `PUT /settings/encryption` — Update encryption key metadata
+- `POST /settings/encryption/rotate` — Rotate encryption key (re-encrypt all credentials)
 
 ### System
 - `GET /health` — Health check (neo4j, telegram)
+- `GET /audit-logs?limit=` — Get audit logs
 
 ---
 
@@ -248,7 +236,8 @@ Token priority in validate_token():
 - [x] Phase 2: Neo4j schema + encryption module + auth token system
 - [x] Phase 3: MCP server + API endpoints + Telegram integration
 - [x] Settings Page (UI) — all tabs working
-- [x] Session auth: admin token in Neo4j, browser sessions (ses_xxx) in localStorage
-- [ ] Phase 4: AGENTS.md documentation
-- [ ] E2E test script
-- [ ] Upload to Central Library
+- [x] Session auth: Keycloak OIDC, browser sessions via localStorage
+- [x] Phase 4: AGENTS.md + SPEC.md updated (Keycloak auth, per-user isolation)
+- [x] E2E test script — 15/15 API tests passed
+- [x] Browser E2E — 5/5 flow tests passed (Login, Host CRUD, Credential CRUD, Users)
+- [x] k8: Deploy to Oracle Cloud (API:8124, UI:3001) + tab navigation fix
