@@ -101,6 +101,7 @@ class CredentialCreate(BaseModel):
     type: str = Field(description="api_key | password | token | ssh_key")
     key_ref: str
     name: str = ""
+    username: str = ""
     value: str
     owner: str = ""
     environment: str = ""
@@ -114,7 +115,8 @@ class CredentialListItem(BaseModel):
     host_id: str
     hostname: str
     environment: str
-    owner: str
+    username: str = ""
+    owner: str = ""
     created_at: str
 
 
@@ -123,8 +125,15 @@ class CredentialWithValue(BaseModel):
     type: str
     key_ref: str
     name: str = ""
+    username: str = ""
     value: str
     owner: str = ""
+
+
+class CredentialUpdate(BaseModel):
+    name: Optional[str] = None
+    value: Optional[str] = None
+    username: Optional[str] = None
 
 
 # ── Audit ─────────────────────────────────────────────────────────────────────

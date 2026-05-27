@@ -83,9 +83,9 @@ export const api = {
     return api.request<{ credentials: Credential[] }>(`/api/credentials${qs}`);
   },
   getCredential: (id: string) => api.request<CredentialWithValue>(`/api/credentials/${id}`),
-  createCredential: (data: { host_id: string; type: string; name?: string; key_ref: string; value: string; owner?: string; environment?: string }) =>
+  createCredential: (data: { host_id: string; type: string; name?: string; key_ref: string; value: string; owner?: string; username?: string; environment?: string }) =>
     api.request<{ credential_id: string }>('/api/credentials', { method: 'POST', body: data }),
-  updateCredential: (id: string, data: { name?: string; value?: string }) =>
+  updateCredential: (id: string, data: { name?: string; value?: string; username?: string }) =>
     api.request<{ success: boolean }>(`/api/credentials/${id}`, { method: 'PUT', body: data }),
   deleteCredential: (id: string) =>
     api.request<{ success: boolean }>(`/api/credentials/${id}`, { method: 'DELETE' }),
@@ -137,6 +137,7 @@ export interface Credential {
   hostname: string;
   host_id: string;
   environment: string;
+  username: string;
   owner?: string;
   created_at: string;
   updated_at: string;
@@ -152,6 +153,8 @@ export interface CredentialWithValue {
   type: string;
   key_ref: string;
   value: string;
+  name: string;
+  username: string;
   owner?: string;
 }
 

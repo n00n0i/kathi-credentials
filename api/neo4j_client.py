@@ -325,19 +325,19 @@ class Neo4jClient:
 
     def create_credential(self, host_id: str, cred_type: str, key_ref: str,
                           encrypted_value: str, owner: str, user_id: str,
-                          name: str = "", environment: str = "") -> dict:
+                          name: str = "", username: str = "", environment: str = "") -> dict:
         credential_id = f"cred_{uuid.uuid4().hex[:12]}"
         created_at = datetime.utcnow().isoformat()
         with self.driver.session() as session:
             session.run("""
                 MATCH (h:Host {host_id: $host_id, user_id: $user_id})
                 CREATE (c:Credential {credential_id: $credential_id, type: $cred_type,
-                  key_ref: $key_ref, name: $name, encrypted_value: $encrypted_value,
+                  key_ref: $key_ref, name: $name, username: $username, encrypted_value: $encrypted_value,
                   owner: $owner, environment: $environment,
                   user_id: $user_id, created_at: datetime(), updated_at: datetime()})
                 CREATE (h)-[:OWNS]->(c)
                 """, host_id=host_id, credential_id=credential_id,
-                cred_type=cred_type, key_ref=key_ref, name=name,
+                cred_type=cred_type, key_ref=key_ref, name=name, username=username,
                 encrypted_value=encrypted_value, owner=owner,
                 environment=environment, user_id=user_id)
         return {
@@ -376,9 +376,9 @@ class Neo4jClient:
                 result = session.run("""
                     MATCH (h:Host {user_id: $user_id})-[:OWNS]->(c:Credential)
                     RETURN c.credential_id AS credential_id, c.type AS type,
-                           c.key_ref AS key_ref, c.name AS name, c.owner AS owner,
-                           c.environment AS environment, c.created_at AS created_at,
-                           h.host_id AS host_id, h.hostname AS hostname
+                           c.key_ref AS key_ref, c.name AS name, c.username AS username,
+                           c.owner AS owner, c.environment AS environment,
+                           c.created_at AS created_at, h.host_id AS host_id, h.hostname AS hostname
                     ORDER BY c.created_at DESC
                     LIMIT 1000
                     """, user_id=user_id)
@@ -387,9 +387,9 @@ class Neo4jClient:
                     MATCH (c:Credential)
                     OPTIONAL MATCH (h:Host)-[:OWNS]->(c)
                     RETURN c.credential_id AS credential_id, c.type AS type,
-                           c.key_ref AS key_ref, c.name AS name, c.owner AS owner,
-                           c.environment AS environment, c.created_at AS created_at,
-                           h.host_id AS host_id, h.hostname AS hostname
+                           c.key_ref AS key_ref, c.name AS name, c.username AS username,
+                           c.owner AS owner, c.environment AS environment,
+                           c.created_at AS created_at, h.host_id AS host_id, h.hostname AS hostname
                     ORDER BY c.created_at DESC
                     LIMIT 1000
                     """)
@@ -409,14 +409,16 @@ class Neo4jClient:
                 result = session.run("""
                     MATCH (h:Host {user_id: $user_id})-[:OWNS]->(c:Credential {credential_id: $credential_id})
                     RETURN c.credential_id AS credential_id, c.type AS type,
-                           c.key_ref AS key_ref, c.encrypted_value AS encrypted_value,
+                           c.key_ref AS key_ref, c.name AS name, c.username AS username,
+                           c.encrypted_value AS encrypted_value,
                            c.owner AS owner, c.created_at AS created_at
                     """, credential_id=credential_id, user_id=user_id)
             else:
                 result = session.run("""
                     MATCH (c:Credential {credential_id: $credential_id})
                     RETURN c.credential_id AS credential_id, c.type AS type,
-                           c.key_ref AS key_ref, c.encrypted_value AS encrypted_value,
+                           c.key_ref AS key_ref, c.name AS name, c.username AS username,
+                           c.encrypted_value AS encrypted_value,
                            c.owner AS owner, c.created_at AS created_at
                     """, credential_id=credential_id)
             record = result.single()

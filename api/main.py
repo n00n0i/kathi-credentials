@@ -14,7 +14,7 @@ from api.models import (
     AuthRequest, AuthResponse,
     AgentCreate, AgentResponse, AgentListItem,
     HostCreate, HostUpdate, HostResponse,
-    CredentialCreate, CredentialListItem, CredentialWithValue,
+    CredentialCreate, CredentialListItem, CredentialWithValue, CredentialUpdate,
     AuditLogEntry,
     TelegramConfig, TelegramTestResponse,
     EncryptionMeta, AdminTokenResponse, HealthResponse,
@@ -522,6 +522,7 @@ def list_credentials(host_id: Optional[str] = Query(None), agent: dict = Depends
                 host_id=c.get("host_id") or "",
                 hostname=c.get("hostname") or "",
                 environment=c.get("environment") or "",
+                username=c.get("username") or "",
                 owner=c.get("owner", ""),
                 created_at=str(c["created_at"]) if c.get("created_at") else "",
             )
@@ -583,6 +584,7 @@ def get_credential(credential_id: str, agent: dict = Depends(get_current_agent))
         type=c["type"],
         key_ref=c["key_ref"],
         name=c.get("name", ""),
+        username=c.get("username", ""),
         value=decrypted,
         owner=c.get("owner", ""),
     )
@@ -595,30 +597,45 @@ def create_credential(data: CredentialCreate, agent: dict = Depends(get_current_
     db = get_neo4j()
     uid = agent.get("user_id")
     cred = db.create_credential(data.host_id, data.type, data.key_ref, encrypted, data.owner,
-                                user_id=uid, name=data.name, environment=data.environment)
+                                user_id=uid, name=data.name, username=data.username, environment=data.environment)
     db.create_audit_log("create", agent["agent_id"], "credential", cred["credential_id"], True)
     return cred
 
 
 @app.put("/credentials/{credential_id}")
-def update_credential(credential_id: str, value: str = Query(...), agent: dict = Depends(get_current_agent)):
+def update_credential(credential_id: str, data: CredentialUpdate, agent: dict = Depends(get_current_agent)):
     require_permission(agent, "credential:write")
     db = get_neo4j()
     uid = agent.get("user_id")
-    encrypted = encrypt_value(value)
+
+    # Build SET clause dynamically
+    set_parts = ["c.updated_at = datetime()"]
+    params: dict = {"cred_id": credential_id}
+    if data.name is not None:
+        set_parts.append("c.name = $name")
+        params["name"] = data.name
+    if data.username is not None:
+        set_parts.append("c.username = $username")
+        params["username"] = data.username
+    if data.value is not None:
+        set_parts.append("c.encrypted_value = $encrypted")
+        params["encrypted"] = encrypt_value(data.value)
+
+    set_clause = ", ".join(set_parts)
+
     with db.driver.session() as session:
         if uid:
-            result = session.run("""
-                MATCH (h:Host {user_id: $uid})-[:OWNS]->(c:Credential {credential_id: $cred_id})
-                SET c.encrypted_value = $encrypted, c.updated_at = datetime()
+            result = session.run(f"""
+                MATCH (h:Host {{user_id: $uid}})-[:OWNS]->(c:Credential {{credential_id: $cred_id}})
+                SET {set_clause}
                 RETURN c.credential_id
-                """, cred_id=credential_id, encrypted=encrypted, uid=uid)
+                """, **params, uid=uid)
         else:
-            result = session.run("""
-                MATCH (h:Host)-[:OWNS]->(c:Credential {credential_id: $cred_id})
-                SET c.encrypted_value = $encrypted, c.updated_at = datetime()
+            result = session.run(f"""
+                MATCH (h:Host)-[:OWNS]->(c:Credential {{credential_id: $cred_id}})
+                SET {set_clause}
                 RETURN c.credential_id
-                """, cred_id=credential_id, encrypted=encrypted)
+                """, **params)
         if not result.single():
             raise HTTPException(status_code=404, detail="Credential not found")
     db.create_audit_log("update", agent["agent_id"], "credential", credential_id, True)

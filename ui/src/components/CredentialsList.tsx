@@ -30,9 +30,9 @@ export default function CredentialsList({ initialToken }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Create form
-  const [form, setForm] = useState({ host_id: '', type: 'ssh_key', name: '', key_ref: '', value: '', owner: '', environment: '' });
+  const [form, setForm] = useState({ host_id: '', type: 'ssh_key', name: '', key_ref: '', value: '', owner: '', username: '', environment: '' });
   // Edit form
-  const [editForm, setEditForm] = useState({ name: '', value: '' });
+  const [editForm, setEditForm] = useState({ name: '', username: '', value: '' });
 
   useEffect(() => {
     if (initialToken) localStorage.setItem('admin_token', initialToken);
@@ -58,7 +58,7 @@ export default function CredentialsList({ initialToken }: Props) {
       await api.createCredential(form);
       setMsg({ type: 'success', text: 'Credential created ✓' });
       setShowCreate(false);
-      setForm({ host_id: '', type: 'ssh_key', name: '', key_ref: '', value: '', owner: '', environment: '' });
+      setForm({ host_id: '', type: 'ssh_key', name: '', key_ref: '', value: '', owner: '', username: '', environment: '' });
       load();
     } catch (e: any) {
       setMsg({ type: 'error', text: e.message });
@@ -104,7 +104,7 @@ export default function CredentialsList({ initialToken }: Props) {
 
   async function openEdit(cred: Credential) {
     setEditCredId(cred.credential_id);
-    setEditForm({ name: cred.name, value: '' });
+    setEditForm({ name: cred.name, username: (cred as any).username || '', value: '' });
     setShowEdit(true);
   }
 
@@ -114,6 +114,7 @@ export default function CredentialsList({ initialToken }: Props) {
       const data: any = {};
       if (editForm.name) data.name = editForm.name;
       if (editForm.value) data.value = editForm.value;
+      if (editForm.username) data.username = editForm.username;
       await api.updateCredential(editCredId, data);
       setMsg({ type: 'success', text: 'Credential updated ✓' });
       setShowEdit(false);
@@ -352,6 +353,12 @@ export default function CredentialsList({ initialToken }: Props) {
                 <span className="cred-panel-label">Owner</span>
                 <span className="cred-panel-value">{selected.owner || '—'}</span>
               </div>
+              {selected.username && (
+              <div className="cred-panel-field">
+                <span className="cred-panel-label">Username</span>
+                <span className="cred-panel-value">{selected.username}</span>
+              </div>
+              )}
               <div className="cred-panel-field">
                 <span className="cred-panel-label">Created</span>
                 <span className="cred-panel-value">{fmtDate(selected.created_at)}</span>
@@ -437,6 +444,11 @@ export default function CredentialsList({ initialToken }: Props) {
                 <textarea className="input" rows={3} placeholder="Paste the secret value here…"
                   value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} required />
               </div>
+              <div className="form-group">
+                <label>Username <span style={{ color: '#555', fontSize: '0.8rem' }}>(for SSH_KEY / password)</span></label>
+                <input className="input" placeholder="e.g. opc, ubuntu, root"
+                  value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Environment</label>
@@ -478,6 +490,11 @@ export default function CredentialsList({ initialToken }: Props) {
                 <label>New Value <span style={{ color: '#555', fontSize: '0.82rem' }}>(leave blank to keep current)</span></label>
                 <textarea className="input" rows={3} placeholder="Enter new secret value to update…"
                   value={editForm.value} onChange={e => setEditForm({ ...editForm, value: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>Username</label>
+                <input className="input" placeholder="Username for this credential"
+                  value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} />
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowEdit(false)}>Cancel</button>
