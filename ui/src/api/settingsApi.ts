@@ -107,15 +107,15 @@ export const api = {
   getHealth: () => api.request<HealthStatus>('/health'),
 
   // Users
-  listUsers: () => api.request<{ users: User[] }>('/users'),
-  getUser: (userId: string) => api.request<User>(`/users/${userId}`),
-  createUser: (data: UserCreate) => api.request<User>('/users', { method: 'POST', body: data as unknown as Record<string, unknown> }),
+  listUsers: () => api.request<{ users: User[] }>('/api/users'),
+  getUser: (userId: string) => api.request<User>(`/api/users/${userId}`),
+  createUser: (data: UserCreate) => api.request<User>('/api/users', { method: 'POST', body: data as unknown as Record<string, unknown> }),
   updateUser: (userId: string, data: Partial<Omit<UserCreate, 'password'>> & { enabled?: boolean }) =>
-    api.request<User>(`/users/${userId}`, { method: 'PUT', body: data }),
+    api.request<User>(`/api/users/${userId}`, { method: 'PUT', body: data }),
   resetUserPassword: (userId: string, newPassword: string) =>
-    api.request<{ success: boolean }>(`/users/${userId}/reset-password`, { method: 'POST', body: { new_password: newPassword } }),
+    api.request<{ success: boolean }>(`/api/users/${userId}/reset-password`, { method: 'POST', body: { new_password: newPassword } }),
   deleteUser: (userId: string) =>
-    api.request<{ success: boolean }>(`/users/${userId}`, { method: 'DELETE' }),
+    api.request<{ success: boolean }>(`/api/users/${userId}`, { method: 'DELETE' }),
 };
 
 export interface Host {
