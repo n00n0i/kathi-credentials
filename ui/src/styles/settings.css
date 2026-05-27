@@ -552,7 +552,7 @@ input[type="datetime-local"].input:focus {
   border: 1px solid #3a3a5a;
   border-radius: 12px;
   padding: 1.5rem;
-  width: 480px;
+  width: 680px;
   max-width: 95vw;
 }
 
