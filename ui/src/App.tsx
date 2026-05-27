@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import SettingsPage from './SettingsPage';
 import LoginScreen from './components/LoginScreen';
 import { api } from './api/settingsApi';
@@ -33,10 +34,18 @@ const App: React.FC = () => {
   }
 
   if (!sessionValid) {
-    return <LoginScreen />;
+    return (
+      <BrowserRouter>
+        <LoginScreen />
+      </BrowserRouter>
+    );
   }
 
-  return <SettingsPage />;
+  return (
+    <BrowserRouter>
+      <SettingsPage />
+    </BrowserRouter>
+  );
 };
 
 export default App;
