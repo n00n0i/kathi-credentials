@@ -533,7 +533,7 @@ def list_credentials(host_id: Optional[str] = Query(None), agent: dict = Depends
 
 @app.get("/credentials/{credential_id}", response_model=CredentialWithValue)
 def get_credential(credential_id: str, agent: dict = Depends(get_current_agent)):
-    require_permission(agent, "credential:get")
+    require_permission(agent, "credential:read")
     db = get_neo4j()
     uid = agent.get("user_id")
     c = db.get_credential(credential_id, user_id=uid)
