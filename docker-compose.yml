@@ -1,0 +1,49 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kathi-keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: kc-secret-pg-2026
+    volumes:
+      - kc-pg-data:/var/lib/postgresql/data
+    networks:
+      - kathi-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: kathi-keycloak
+    restart: unless-stopped
+    command: start-dev --hostname=100.68.243.11 --hostname-strict=false --proxy=edge
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: kc-secret-pg-2026
+      KC_PROXY: edge
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: kc-admin-2026
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kathi-net
+
+networks:
+  kathi-net:
+    driver: bridge
+
+volumes:
+  kc-pg-data:
