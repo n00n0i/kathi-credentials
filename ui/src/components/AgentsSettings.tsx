@@ -130,14 +130,18 @@ const AgentsSettings: React.FC = () => {
     setMessage({ type: 'success', text: '✅ API URL saved' });
   };
 
-  const copySetupSnippet = () => {
+const copySetupSnippet = async () => {
     if (!createdAgent) return;
-const snippet = `KATHI_API_URL=${agentApiUrl}
+    const snippet = `KATHI_API_URL=${agentApiUrl}
 KATHI_AGENT_TOKEN=${createdAgent.token}
 KATHI_AGENT_ID=${createdAgent.agent_id}
 KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`;
-    navigator.clipboard.writeText(snippet);
-    setMessage({ type: 'success', text: '✅ Setup snippet copied!' });
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setMessage({ type: 'success', text: '✅ Setup snippet copied!' });
+    } catch {
+      setMessage({ type: 'error', text: '❌ Copy failed — try selecting text manually' });
+    }
   };
 
   return (
@@ -345,7 +349,7 @@ KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`}</pre>
 
             <div className="modal-actions" style={{ marginTop: '1rem' }}>
               <button className="btn btn-secondary" onClick={() => setCreatedAgent(null)}>Done</button>
-              <button className="btn btn-primary" onClick={copySetupSnippet}>📋 Copy Setup Snippet</button>
+              <button className="btn btn-primary" onClick={() => copySetupSnippet()}>📋 Copy Setup Snippet</button>
             </div>
           </div>
         </div>
