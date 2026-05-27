@@ -24,9 +24,27 @@ def encrypt_value(plaintext: str) -> str:
 
 
 def decrypt_value(ciphertext: str) -> str:
-    """Decrypt a credential value. Returns plaintext."""
+    """Decrypt a credential value. Returns plaintext.
+
+    For SSH_KEY credentials in PEM format: if the decrypted value lacks newlines
+    but starts with a PEM header (-----BEGIN), reformat with proper 64-char
+    line breaks so the key is valid for SSH/libcrypto use.
+    """
     f = _get_fernet()
-    return f.decrypt(ciphertext.encode()).decode()
+    plaintext = f.decrypt(ciphertext.encode()).decode()
+
+    # Reconstruct PEM newlines if stripped during storage.
+    # Fernet ciphertext is deterministic per-call, so storing without newlines
+    # removes structural formatting. Detect PEM headers to fix.
+    if plaintext.startswith("-----BEGIN") and "\n" not in plaintext:
+        # PEM body is base64; split into 64-char lines
+        header_end = plaintext.index("\n") + 1
+        header = plaintext[:header_end]
+        body = plaintext[header_end:].replace(" ", "")
+        lines = [body[i:i + 64] for i in range(0, len(body), 64)]
+        plaintext = header + "\n".join(lines) + "\n"
+
+    return plaintext
 
 
 def generate_key() -> str:
