@@ -122,8 +122,9 @@ class CredentialWithValue(BaseModel):
     credential_id: str
     type: str
     key_ref: str
+    name: str = ""
     value: str
-    owner: str
+    owner: str = ""
 
 
 # ── Audit ─────────────────────────────────────────────────────────────────────

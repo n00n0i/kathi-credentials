@@ -86,7 +86,7 @@ export default function CredentialsList({ initialToken }: Props) {
     try {
       const res = await api.getCredential(cred.credential_id);
       setRevealedId(cred.credential_id);
-      setRevealedValue(res.credential.value);
+      setRevealedValue(res.value);
     } catch (e: any) {
       setMsg({ type: 'error', text: e.message });
     }

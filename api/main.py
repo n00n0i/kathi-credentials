@@ -582,6 +582,7 @@ def get_credential(credential_id: str, agent: dict = Depends(get_current_agent))
         credential_id=credential_id,
         type=c["type"],
         key_ref=c["key_ref"],
+        name=c.get("name", ""),
         value=decrypted,
         owner=c.get("owner", ""),
     )

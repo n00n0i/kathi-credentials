@@ -82,7 +82,7 @@ export const api = {
     const qs = host_id !== undefined ? `?host_id=${encodeURIComponent(host_id)}` : '';
     return api.request<{ credentials: Credential[] }>(`/api/credentials${qs}`);
   },
-  getCredential: (id: string) => api.request<{ credential: CredentialDetail }>(`/api/credentials/${id}`),
+  getCredential: (id: string) => api.request<CredentialWithValue>(`/api/credentials/${id}`),
   createCredential: (data: { host_id: string; type: string; name?: string; key_ref: string; value: string; owner?: string; environment?: string }) =>
     api.request<{ credential_id: string }>('/api/credentials', { method: 'POST', body: data }),
   updateCredential: (id: string, data: { name?: string; value?: string }) =>
@@ -143,6 +143,14 @@ export interface Credential {
 }
 
 export interface CredentialDetail extends Credential {
+  value: string;
+  owner?: string;
+}
+
+export interface CredentialWithValue {
+  credential_id: string;
+  type: string;
+  key_ref: string;
   value: string;
   owner?: string;
 }
