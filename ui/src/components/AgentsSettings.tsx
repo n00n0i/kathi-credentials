@@ -132,15 +132,25 @@ const AgentsSettings: React.FC = () => {
 
 const copySetupSnippet = async () => {
     if (!createdAgent) return;
-const snippet = `KATHI_API_URL=${agentApiUrl}
+    const snippet = `KATHI_API_URL=${agentApiUrl}
 KATHI_AGENT_TOKEN=${createdAgent.token}
 KATHI_AGENT_ID=${createdAgent.agent_id}
 KATHI_PERMISSIONS=${createdAgent.permissions.join(', ')}`;
+    // Try Clipboard API first, fall back to textarea select
     try {
       await navigator.clipboard.writeText(snippet);
       setMessage({ type: 'success', text: '✅ Setup snippet copied!' });
     } catch {
-      setMessage({ type: 'error', text: '❌ Copy failed — try selecting text manually' });
+      // Fallback: create temp textarea and use execCommand
+      const ta = document.createElement('textarea');
+      ta.value = snippet;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); setMessage({ type: 'success', text: '✅ Setup snippet copied!' }); }
+      catch { setMessage({ type: 'error', text: '❌ Copy failed — select text manually' }); }
+      document.body.removeChild(ta);
     }
   };
 
