@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import TelegramSettings from './components/TelegramSettings';
 import EncryptionSettings from './components/EncryptionSettings';
 import AdminTokenSettings from './components/AdminTokenSettings';
@@ -33,8 +34,28 @@ const TABS: Tab[] = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabId>('telegram');
   const [loading, setLoading] = useState(false);
+
+  // Sync activeTab with URL on mount
+  useEffect(() => {
+    const path = location.pathname; // e.g. /settings/hosts
+    const match = path.match(/\/settings\/(\w+)/);
+    if (match) {
+      const tabId = match[1] as TabId;
+      if (TABS.find(t => t.id === tabId)) {
+        setActiveTab(tabId);
+      }
+    }
+  }, [location]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tabId: TabId) => {
+    setActiveTab(tabId);
+    navigate(`/settings/${tabId}`, { replace: true });
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -81,7 +102,7 @@ const SettingsPage: React.FC = () => {
             <button
               key={tab.id}
               className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
             >
               <span className="tab-icon">{tab.icon}</span>
               <span className="tab-label">{tab.label}</span>
