@@ -25,25 +25,22 @@ _admin_token_expires: float = 0
 
 def _get_admin_token() -> str:
     """Get cached Keycloak admin token or fetch a new one.
-    Uses client_credentials grant with kathi-backend service account.
+    Uses password grant against the master realm (admin credentials).
+    SSL Required must be set to 'none' on master realm for HTTP access.
     """
     global _admin_token_cache, _admin_token_expires
     import time
     if _admin_token_cache and time.time() < _admin_token_expires - 60:
         return _admin_token_cache
 
-    import base64
-    credentials = base64.b64encode(b"kathi-backend:kathi-backend-secret-2026").decode()
     resp = httpx.post(
         f"{_keycloak_url}/realms/master/protocol/openid-connect/token",
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         data={
-            "grant_type": "client_credentials",
-            "client_id": "kathi-backend",
-            "client_secret": "kathi-backend-secret-2026",
+            "grant_type": "password",
+            "client_id": "admin-cli",
+            "username": _admin_user,
+            "password": _admin_password,
         },
         timeout=10.0,
     )
@@ -322,6 +319,7 @@ def get_oidc_config() -> dict:
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _user_summary(u: dict) -> dict:
+    ts = u.get("createdTimestamp")
     return {
         "user_id": u.get("id"),
         "username": u.get("username"),
@@ -329,12 +327,10 @@ def _user_summary(u: dict) -> dict:
         "first_name": u.get("firstName", ""),
         "last_name": u.get("lastName", ""),
         "enabled": u.get("enabled", True),
-        "created_at": u.get("createdTimestamp"),
+        "created_at": str(ts) if isinstance(ts, int) else ts,
     }
 
 
 def _user_detail(u: dict) -> dict:
     out = _user_summary(u)
-    # Count sessions (not directly available in Keycloak without extra queries)
-    out["realm_roles"] = u.get("realmRoles", [])
     return out

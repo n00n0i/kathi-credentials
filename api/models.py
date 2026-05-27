@@ -210,10 +210,10 @@ class UserResponse(BaseModel):
     user_id: str
     username: str
     email: str
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     enabled: bool
-    created_at: Optional[str] = None
+    created_at: Optional[str | int] = None
 
 
 class UserListResponse(BaseModel):
